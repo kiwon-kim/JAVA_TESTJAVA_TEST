@@ -1,0 +1,102 @@
+rad distance
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <mariadb/mysql.h>
+
+#include <wiringPi.h>
+#include <wiringSerial.h>
+
+static char* host = "localhost";
+static char* user = "root";
+static char* pass = "KCCI";
+static char* dbname = "test";
+
+char device[] = "/dev/ttyACM0";
+
+int fd, str_len;
+unsigned long baud = 9600;
+
+int main()
+{
+        MYSQL* conn;
+        int res;
+        char in_sql[200] = {0};
+        char* pArray[2] = {0};
+        char ser_buff[100] = {0};
+
+        int buffindex = 0;
+        char* pToken;
+        int rad, distance;
+        int index, sql_index;
+        int flag = 0;
+
+        conn = mysql_init(NULL);
+        printf("%s \n", "START");
+        fflush(stdout);
+
+        if ((fd = serialOpen(device, baud)) < 0)
+                exit(1);
+        if (wiringPiSetupGpio() == -1)
+                return -1;
+        if (!(mysql_real_connect(conn, host, user, pass, dbname, 0, NULL, 0)))
+        {
+                fprintf(stderr, "error : %s[%d] \n", mysql_error(conn), mysql_errno(conn));
+                exit(1);
+        }
+        else
+                printf("SQL CONNECTION\n");
+        while (1)
+        {
+                // 여기부터 임데디드 아두이노한테 데이터가 입력받은지 확인
+                if (serialDataAvail(fd))
+                {
+                        ser_buff[buffindex++] = serialGetchar(fd);
+                        if (ser_buff[buffindex - 1] == 'L')
+                        {
+                                flag = 1;
+                                ser_buff[buffindex - 1] = '0';
+                                str_len = strlen(ser_buff);
+                                printf("test ser_buff = %s buffindex = %d, strlen = %d\n", ser_buff, buffindex, str_len);
+                        pToken = strtok(ser_buff, ":"); //문자열 구분하기 위한 함수
+                        int i = 0;
+                        while (pToken != NULL)
+                        {
+                                pArray[i] = pToken;
+                                if (++i > 3)
+                                        break;
+                                pToken = strtok(NULL, " ");
+                                printf("ser_buff[%d] = %s \n", i - 1, pArray[i - 1]);
+                        }
+                        rad = atoi(pArray[0]);
+                        distance = atoi(pArray[1]);
+
+                        printf("rad = %d, distance = %d \n", rad, distance);
+
+                        for (int i = 0; i <= str_len; i++)
+                                ser_buff[i] = 0; // 초기화 하기
+                        buffindex = 0;
+                //여기부터 DB에아두이노가수집한 데이터값 DB에 입력하기
+                if (rad < 500 && distance < 500)
+                {
+                                if(flag == 1)
+                                {
+                                        sprintf(in_sql, "insert into distance(NO, DATE,TIME, RAD, DISTANCE) value(null, now(), now(), %d, %d)", rad,  distance);
+                                        res = mysql_query(conn, in_sql);
+
+                                        if (!res)
+                                                printf("inserted %lu rows \n", (unsigned long)mysql_affected_rows(conn));
+                                        else
+                                                fprintf(stderr, "error : %s[%d] \n", mysql_error(conn), mysql_errno(conn));
+                                        flag = 0;
+                                }
+                        }
+                }
+        }
+        }
+        mysql_close(conn);
+        return EXIT_SUCCESS;
+}
+
+

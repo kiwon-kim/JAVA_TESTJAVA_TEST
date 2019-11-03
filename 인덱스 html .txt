@@ -1,0 +1,13 @@
+// index.html
+<html>
+
+<head>
+        <meta charset = "UTF-8">
+        <title>IoT 임 베 디 드</title>
+</head>
+<frameset cols = "30%,*">
+<frame src = "http://192.168.1.12/sqltable.php">
+<frame src = "http://192.168.1.12/sqlgraph.php">
+</frameset>
+
+</html>

@@ -1,0 +1,55 @@
+//spltable.php
+
+<!DOCTYPE html>
+<html>
+<head>
+        <meta charset = "UTF-8">
+        <meta http-equiv="refresh" content = "30">
+        <style type =  "text/css">
+                .spec{
+                        text-align:center;
+                }
+                .con{
+                        text-align:left;
+                }
+                </style>
+</head>
+<body>
+        <h1 align = "center">My Database</h1>
+        <div class = "spec">
+                # <b>The sensor value description</b><br>
+                # 1 ~ 500 각도 <br>
+                # 1 ~ 500 거리
+        </div>
+
+        <table border = '1' style = "width = 30%" align = "center">
+        <tr align = "center">
+                <th>NO</ht>
+                <th>ACCIDENT DATE</th>
+                <th>ACCIDENT TIME</th>
+                <th>RAD</th>
+                <th>DISTANCE</th>
+        </tr>
+
+        <?php
+                $conn = mysqli_connect("localhost","root","KCCI");
+                mysqli_select_db($conn, "test");
+                $result=mysqli_query($conn, "Select * from distance order by NO desc");
+
+                while($row=mysqli_fetch_array($result)){
+                echo "<tr align = center>";
+                echo '<td>'.$row['NO'].'</td>';
+                echo '<td>'.$row['DATE'].'</td>';
+                echo '<td>'.$row['TIME'].'</td>';
+                echo '<td>'.$row['RAD'].'</td>';
+                echo '<td>'.$row['DISTANCE'].'<td>';
+                echo "</tr>";
+
+                mysqli_close($conn);
+                }
+        ?>
+        </table>
+</body>
+</html>
+
+

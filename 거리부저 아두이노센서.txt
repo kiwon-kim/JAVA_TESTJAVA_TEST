@@ -1,0 +1,108 @@
+//거리 부저 아두이노 센서
+
+
+#include <Servo.h>
+#include <MsTimer2.h>
+#include <SPI.h>
+Servo servo;
+
+#define TRIG 2
+#define ECHO 3
+
+#define C 262 // 도 
+#define D 294 // 레 
+#define E 330 // 미 
+#define F 349 // 파 
+#define G 392 // 솔 
+#define A 440 // 라 
+#define B 494 // 시 
+
+int Pitch_data = G;
+int Pitch_data2 = B;
+boolean sensor_read = 0;
+char msg[15] ={0};
+
+int buzzer=7;
+
+int servoDirection = 1, rad = 0;
+ 
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  servo.attach(9);
+  MsTimer2::set(100,test);
+  MsTimer2::start();
+  pinMode(TRIG, OUTPUT);
+  pinMode(ECHO, INPUT);
+  SPI.begin();
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+    rad += servoDirection;
+  if(rad > 180)
+  {
+  rad = 179;
+    servoDirection = -1; 
+  }else if(rad < 0)
+  {
+  rad = 1;
+    servoDirection = 1;
+  }
+  delay(15);
+  servo.write(rad);
+ 
+  
+  if(sensor_read)
+  {
+    digitalWrite(TRIG, LOW);
+    delayMicroseconds(2);
+    digitalWrite(TRIG, HIGH);
+    delayMicroseconds(5);
+    digitalWrite(TRIG, LOW);
+
+  
+  unsigned int distance = pulseIn(ECHO, HIGH);
+  distance = distance * 17/1000; // cm단위
+    //long distance = pulseIn(ECHO, HIGH, 5800)/58;
+
+    //Serial.print("r");
+    //Serial.print(rad);
+    //Serial.print("d");
+    //Serial.println(distance);
+ if(distance > 50){
+      Serial.println("safe!!!!!!");
+      noTone(buzzer);
+      delay(1000);
+    }
+  if(50 >distance && 5 <= distance){
+      Serial.println("warning!!!!!!");
+          noTone(buzzer);
+          tone(buzzer,Pitch_data);
+          delay(distance*5);
+          noTone(buzzer);
+          delay(distance*5);
+    }
+   
+    if(0<=distance && distance <5){
+      Serial.println("crash!!!!!!");
+      tone(buzzer,Pitch_data2);
+      delay(distance*400);
+      noTone(buzzer);
+       delay(0.01);
+       sprintf(msg, "%d:%dL", rad, (int)distance);
+      Serial.write(msg); 
+    
+    }
+    
+    Serial.println();
+  }
+  sensor_read = 0;
+}
+
+
+
+void test()
+{
+  sensor_read = !sensor_read;
+}
